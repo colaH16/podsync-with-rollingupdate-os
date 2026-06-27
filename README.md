@@ -1,0 +1,1 @@
+# podsync-with-rollingupdate-os
