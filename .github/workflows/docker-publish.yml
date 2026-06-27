@@ -66,7 +66,7 @@ jobs:
             type=raw,value=${{ env.PODSYNC_VERSION }}-latest
             type=raw,value=${{ env.PODSYNC_VERSION }}-${{ steps.date.outputs.date }}
             type=sha,prefix=${{ env.PODSYNC_VERSION }}-sha-
-            
+
       - name: Inspect build context
         run: |
           pwd
@@ -75,6 +75,7 @@ jobs:
           git ls-files Dockerfile
           test -f Dockerfile
 
+      # Build and push the multi-architecture image.
       - name: Build and push Docker image
         id: build-and-push
         uses: docker/build-push-action@v6
@@ -88,19 +89,6 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-      # Build and push the multi-architecture image.
-      - name: Build and push Docker image
-        id: build-and-push
-        uses: docker/build-push-action@v6
-        with:
-          context: .
-          file: ./Dockerfile
-          platforms: linux/amd64,linux/arm64
-          push: true
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
 
       # Generate a provenance attestation for the pushed image.
       - name: Generate artifact attestation
