@@ -13,7 +13,6 @@ COPY --from=podsync /usr/local/bin/youtube-dl /usr/local/bin/youtube-dl
 COPY --from=podsync /usr/local/bin/youtube-dl /usr/bin/yt-dlp
 COPY --from=podsync /usr/local/bin/youtube-dl /usr/local/bin/yt-dlp
 COPY --from=podsync /app/podsync /app/podsync
-COPY --from=podsync /app/html/index.html /app/html/index.html
 
 ENTRYPOINT ["/app/podsync"]
 CMD ["--no-banner"]
