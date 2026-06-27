@@ -13,12 +13,10 @@ RUN sed -i -E '/^baseurl=.*download.opensuse.org/ s|$|?REGION=EU\&AVOID_COUNTRY=
       'download.transfer_timeout = 900' \
       'download.max_silent_tries = 1' \
       >> /etc/zypp/zypp.conf \
- && grep -R '^baseurl=' /etc/zypp/repos.d \
  && zypper -n refresh \
- && zypper -n install --no-recommends ca-certificates python313 python313-pip \
-      ffmpeg-7 timezone nodejs24 \
+ && zypper -n install --no-recommends ca-certificates python313 ffmpeg-7 \
+  timezone nodejs24 \
  && ln -sf /usr/bin/python3.13 /usr/local/bin/python3 \
- && ln -sf /usr/bin/pip3.13 /usr/local/bin/pip3 \
  && zypper clean -a
 
 WORKDIR /app
