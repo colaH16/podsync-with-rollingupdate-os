@@ -46,6 +46,17 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Inspect runner network
+        run: |
+          echo "Public IP:"
+          curl -fsSL https://ifconfig.me
+          echo
+          echo "Geo:"
+          curl -fsSL https://ipinfo.io/json || true
+          echo
+          echo "openSUSE DNS:"
+          getent hosts download.opensuse.org || true
+          
       - name: Resolve build versions
         id: versions
         env:

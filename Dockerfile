@@ -6,7 +6,15 @@ FROM ghcr.io/denoland/deno:bin-${DENO_VERSION} AS deno
 
 FROM opensuse/tumbleweed
 
-RUN zypper -n refresh \
+
+RUN sed -i -E '/^baseurl=.*download.opensuse.org/ s|$|?REGION=EU\&AVOID_COUNTRY=CN,RU,BY|' /etc/zypp/repos.d/*.repo \
+ && printf '%s\n' \
+      'download.connect_timeout = 3' \
+      'download.transfer_timeout = 900' \
+      'download.max_silent_tries = 1' \
+      >> /etc/zypp/zypp.conf \
+ && grep -R '^baseurl=' /etc/zypp/repos.d \
+ && zypper -n refresh \
  && zypper -n install --no-recommends ca-certificates python313 python313-pip \
       ffmpeg-7 timezone nodejs24 \
  && ln -sf /usr/bin/python3.13 /usr/local/bin/python3 \
