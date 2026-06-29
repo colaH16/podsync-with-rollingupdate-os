@@ -74,7 +74,23 @@ jobs:
           echo "Deno: $deno_version"
           echo "Build date: $build_date"
 
+      - name: Check whether version image already exists
+        id: existing
+        run: |
+          image="${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.versions.outputs.podsync_version }}-deno${{ steps.versions.outputs.deno_version }}"
+
+          echo "Checking image: $image"
+
+          if docker buildx imagetools inspect "$image" >/dev/null 2>&1; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+            echo "Image already exists. Build will be skipped."
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+            echo "Image does not exist. Build will run."
+          fi
+
       - name: Extract Docker metadata
+        if: steps.existing.outputs.exists != 'true' || github.event_name == 'workflow_dispatch'
         id: meta
         uses: docker/metadata-action@v5
         with:
@@ -84,9 +100,9 @@ jobs:
             type=raw,value=${{ steps.versions.outputs.podsync_version }}-latest
             type=raw,value=${{ steps.versions.outputs.podsync_version }}-deno${{ steps.versions.outputs.deno_version }}
             type=raw,value=${{ steps.versions.outputs.build_date }}-${{ steps.versions.outputs.podsync_version }}-deno${{ steps.versions.outputs.deno_version }}
-            type=sha,prefix=${{ steps.versions.outputs.podsync_version }}-deno${{ steps.versions.outputs.deno_version }}-sha-
 
       - name: Build and push Docker image
+        if: steps.existing.outputs.exists != 'true' || github.event_name == 'workflow_dispatch'
         id: build-and-push
         uses: docker/build-push-action@v6
         with:
@@ -103,8 +119,10 @@ jobs:
           cache-to: type=gha,mode=max
 
       - name: Generate artifact attestation
+        if: steps.existing.outputs.exists != 'true' || github.event_name == 'workflow_dispatch'
         uses: actions/attest-build-provenance@v2
         with:
           subject-name: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
           subject-digest: ${{ steps.build-and-push.outputs.digest }}
           push-to-registry: true
+          
