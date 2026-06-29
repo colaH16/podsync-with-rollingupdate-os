@@ -65,28 +65,35 @@ jobs:
           podsync_version="$(gh api repos/mxpv/podsync/releases/latest --jq '.tag_name')"
           deno_version="$(gh api repos/denoland/deno/releases/latest --jq '.tag_name' | sed 's/^v//')"
           build_date="$(date -u +%Y%m%d)"
+          image_repo="${REGISTRY}/${GITHUB_REPOSITORY,,}"
+          version_tag="${podsync_version}-deno${deno_version}"
+          candidate_image="${image_repo}:${version_tag}"
 
           echo "podsync_version=$podsync_version" >> "$GITHUB_OUTPUT"
           echo "deno_version=$deno_version" >> "$GITHUB_OUTPUT"
           echo "build_date=$build_date" >> "$GITHUB_OUTPUT"
+          echo "image_repo=$image_repo" >> "$GITHUB_OUTPUT"
+          echo "version_tag=$version_tag" >> "$GITHUB_OUTPUT"
+          echo "candidate_image=$candidate_image" >> "$GITHUB_OUTPUT"
 
-          echo "Podsync: $podsync_version"
-          echo "Deno: $deno_version"
-          echo "Build date: $build_date"
+          echo "Podsync version: $podsync_version"
+          echo "Deno version: $deno_version"
+          echo "Image repo: $image_repo"
+          echo "New candidate image: $candidate_image"
 
-      - name: Check whether version image already exists
+      - name: Check whether candidate image already exists
         id: existing
         run: |
-          image="${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.versions.outputs.podsync_version }}-deno${{ steps.versions.outputs.deno_version }}"
+          candidate_image="${{ steps.versions.outputs.candidate_image }}"
 
-          echo "Checking image: $image"
+          echo "New candidate image: $candidate_image"
 
-          if docker buildx imagetools inspect "$image" >/dev/null 2>&1; then
+          if docker buildx imagetools inspect "$candidate_image" >/dev/null 2>&1; then
             echo "exists=true" >> "$GITHUB_OUTPUT"
-            echo "Image already exists. Build will be skipped."
+            echo "Candidate image already exists. Build will be skipped."
           else
             echo "exists=false" >> "$GITHUB_OUTPUT"
-            echo "Image does not exist. Build will run."
+            echo "Candidate image does not exist. Build will run."
           fi
 
       - name: Extract Docker metadata
@@ -94,13 +101,14 @@ jobs:
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          images: ${{ steps.versions.outputs.image_repo }}
           tags: |
             type=raw,value=latest
             type=raw,value=${{ steps.versions.outputs.podsync_version }}-latest
-            type=raw,value=${{ steps.versions.outputs.podsync_version }}-deno${{ steps.versions.outputs.deno_version }}
-            type=raw,value=${{ steps.versions.outputs.build_date }}-${{ steps.versions.outputs.podsync_version }}-deno${{ steps.versions.outputs.deno_version }}
+            type=raw,value=${{ steps.versions.outputs.version_tag }}
+            type=raw,value=${{ steps.versions.outputs.build_date }}-${{ steps.versions.outputs.version_tag }}
 
+            
       - name: Build and push Docker image
         if: steps.existing.outputs.exists != 'true' || github.event_name == 'workflow_dispatch'
         id: build-and-push
